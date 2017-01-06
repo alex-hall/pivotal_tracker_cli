@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+require 'bundler/setup'
+require 'pivotal_tracker_cli'
+require 'irb'
+IRB.start

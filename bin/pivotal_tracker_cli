@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'pivotal_tracker_cli'
+
+PivotalTrackerCli::Client.start(ARGV)

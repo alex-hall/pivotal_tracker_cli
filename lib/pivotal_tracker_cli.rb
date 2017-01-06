@@ -8,12 +8,27 @@ require_relative 'api'
 module PivotalTrackerCli
   class Client < Thor
 
+    attr_reader :username_to_user_id_map
+
     def initialize(args, local_options, config)
       config = YAML.load_file(ENV['HOME'] + '/.pt')
 
       @api_token = config['api_token']
       @project_id = config['project_id']
       @username = config['username']
+
+      if config['username_to_user_id_map']
+        @username_to_user_id_map = config['username_to_user_id_map']
+      else
+        @username_to_user_id_map = PivotalTrackerCli::Api.get_all_users_for_project(@project_id, @api_token)
+
+        config['username_to_user_id_map'] = @username_to_user_id_map
+
+        File.open(ENV['HOME'] + '/.pt', 'w') do |f|
+          f.write config.to_yaml
+        end
+      end
+
       super
     end
 

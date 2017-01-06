@@ -16,12 +16,38 @@ describe PivotalTrackerCli::Client do
                                   'project_id' => project_id,
                                   'username' => username
                               })
+
+      allow(PivotalTrackerCli::Api)
+          .to receive(:get_all_users_for_project)
+                  .with(project_id, api_token)
+                  .and_return({
+                                  'TEST_TEST' => 123456,
+                                  'OTHER_TEST' => 444444
+                              })
+
+      allow(ENV).to receive(:[]).with(anything).and_call_original
+      allow(ENV).to receive(:[]).with('HOME').and_return('HOME_PATH')
+
+      allow(File).to receive(:open).with('HOME_PATH/.pt', 'w').and_return({ })
     end
 
 
     subject {
       PivotalTrackerCli::Client.new([], {}, {})
     }
+
+    describe 'initialize' do
+      context 'when the user cache is empty' do
+        it 'attempts to pull down and cache all users' do
+          expect(subject.username_to_user_id_map)
+              .to eq({
+                         'TEST_TEST' => 123456,
+                         'OTHER_TEST' => 444444
+                     })
+        end
+      end
+    end
+
 
     describe '#find_current_stories' do
       context 'when fetching all of a users stories' do

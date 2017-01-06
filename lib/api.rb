@@ -1,5 +1,23 @@
 module PivotalTrackerCli
   class Api
+    def self.get_all_users_for_project(project_id, api_token)
+      response = HTTParty.get("https://www.pivotaltracker.com/services/v5/projects/#{project_id}/memberships",
+                              headers: {
+                                  'X-TrackerToken': api_token
+                              }
+      )
+
+      return unless response.success?
+
+      member_map = {}
+
+        response.parsed_response.map do |member|
+          member_map[member['person']['username']] = member['person']['id']
+        end
+
+      member_map
+    end
+
     def self.get_story_by_id(project_id, api_token, story_id)
       response = HTTParty
                      .get("https://www.pivotaltracker.com/services/v5/projects/#{project_id}/stories/#{story_id.to_s}",

@@ -3,6 +3,66 @@ require_relative '../lib/api'
 
 describe PivotalTrackerCli::Api do
 
+
+  describe '#get_all_users_for_project' do
+    context 'when retrieving users for the project' do
+      let(:membership_response) do
+        [
+            {
+                'kind' => 'project_membership',
+                'id' => 'SOME ID',
+                'created_at' => '2015-09-18T17:56:20Z',
+                'updated_at' => '2017-01-05T14:10:31Z',
+                'person' => {
+                    'kind' => 'robot',
+                    'id' => 123456,
+                    'name' => 'TEST R. TESTER',
+                    'email' => 'test_r_tester@test.biz',
+                    'initials' => 'TT',
+                    'username' => 'TEST_TEST'
+                },
+                'project_id' => 'SOME PROJECT ID',
+                'role' => 'owner',
+            }, {
+                'kind' => 'project_membership',
+                'id' => 'SOME OTHER ID',
+                'created_at' => '2015-09-18T17:56:20Z',
+                'updated_at' => '2017-01-05T14:10:31Z',
+                'person' => {
+                    'kind' => 'robot',
+                    'id' => 444444,
+                    'name' => 'OTHER R. TESTER',
+                    'email' => 'other_r_tester@test.biz',
+                    'initials' => 'OT',
+                    'username' => 'OTHER_TEST'
+                },
+                'project_id' => 'SOME PROJECT ID',
+                'role' => 'owner',
+            },
+        ]
+      end
+
+      before do
+        allow(HTTParty)
+            .to receive(:get)
+                    .with('https://www.pivotaltracker.com/services/v5/projects/SOME PROJECT ID/memberships',
+                          headers: {
+                              'X-TrackerToken': 'SOME API TOKEN'
+                          })
+                    .and_return(double(:response, success?: true, parsed_response: membership_response))
+      end
+
+      it 'should return a key value pair of username and user id' do
+        user_hash =
+            {
+                'TEST_TEST' => 123456,
+                'OTHER_TEST' => 444444
+            }
+        expect(PivotalTrackerCli::Api.get_all_users_for_project('SOME PROJECT ID', 'SOME API TOKEN')).to eq(user_hash)
+      end
+    end
+  end
+
   describe '#get_current_stories_for_user' do
     context 'when the service call is successful' do
       let(:story_response) do
@@ -52,7 +112,7 @@ describe PivotalTrackerCli::Api do
       before do
         allow(HTTParty)
             .to receive(:get)
-                    .and_return(double(:response, success?: false, parsed_response: { 'error' => 'SOME BAD ERROR'}))
+                    .and_return(double(:response, success?: false, parsed_response: {'error' => 'SOME BAD ERROR'}))
       end
 
       it 'returns a list containing the error' do

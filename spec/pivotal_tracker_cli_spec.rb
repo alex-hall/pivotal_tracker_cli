@@ -8,6 +8,12 @@ describe PivotalTrackerCli::Client do
     let(:project_id) { 'PROJECT ID' }
     let(:username) { 'USERNAME' }
 
+    let(:file_double) { double(:file, write: true) }
+
+    user_map = {
+        'TEST_TEST' => 123456,
+        'OTHER_TEST' => 444444
+    }
     before do
       allow(YAML)
           .to receive(:load_file)
@@ -20,15 +26,12 @@ describe PivotalTrackerCli::Client do
       allow(PivotalTrackerCli::Api)
           .to receive(:get_all_users_for_project)
                   .with(project_id, api_token)
-                  .and_return({
-                                  'TEST_TEST' => 123456,
-                                  'OTHER_TEST' => 444444
-                              })
+                  .and_return(user_map)
 
       allow(ENV).to receive(:[]).with(anything).and_call_original
       allow(ENV).to receive(:[]).with('HOME').and_return('HOME_PATH')
 
-      allow(File).to receive(:open).with('HOME_PATH/.pt', 'w').and_return({ })
+      allow(File).to receive(:open).with('HOME_PATH/.pt', 'w') {}
     end
 
 
@@ -40,10 +43,7 @@ describe PivotalTrackerCli::Client do
       context 'when the user cache is empty' do
         it 'attempts to pull down and cache all users' do
           expect(subject.username_to_user_id_map)
-              .to eq({
-                         'TEST_TEST' => 123456,
-                         'OTHER_TEST' => 444444
-                     })
+              .to eq(user_map)
         end
       end
     end
@@ -81,7 +81,7 @@ describe PivotalTrackerCli::Client do
                   ****************************************
             TEXT
             expect {
-              subject.find_current_stories
+              subject.list
             }.to output(output).to_stdout
           end
         end
@@ -103,7 +103,7 @@ describe PivotalTrackerCli::Client do
                   ****************************************
             TEXT
             expect {
-              subject.find_current_stories
+              subject.list
             }.to output(output).to_stdout
           end
 
@@ -119,39 +119,31 @@ describe PivotalTrackerCli::Client do
             .to receive(:update_story_state)
                     .with(project_id, api_token, id, updated_state)
                     .and_return("Story ##{id} successfully #{updated_state}.")
+
+        allow(PivotalTrackerCli::Api)
+            .to receive(:get_story_by_id)
+                    .with(project_id, api_token, id).and_return('LITERALLY ANYTHING')
       end
 
-      context 'when starting a story' do
+      context 'when unstarting, starting, a story' do
         let(:updated_state) { 'started' }
 
         context 'and the story id exists' do
           it 'should updated the status to started' do
-
             expect {
-              subject.start(id)
+              subject.update(id, 'start')
             }.to output("Story ##{id} successfully started.\n").to_stdout
 
           end
         end
-      end
 
-      context 'when unstarting a story' do
-        let(:updated_state) { 'unstarted' }
+        context 'when giving an invalid status' do
+          it 'should updated the status to started' do
+            expect {
+              subject.update(id, 'BANANA')
+            }.to output("Invalid story status. Story statuses are: unstart, start, deliver, finish\n").to_stdout
 
-        it 'should update the status to unstarted' do
-          expect {
-            subject.unstart(id)
-          }.to output("Story ##{id} successfully unstarted.\n").to_stdout
-        end
-      end
-
-      context 'when delivering the story' do
-        let(:updated_state) { 'delivered' }
-
-        it 'should deliver the story' do
-          expect {
-            subject.deliver(id)
-          }.to output("Story ##{id} successfully delivered.\n").to_stdout
+          end
         end
       end
 
@@ -166,7 +158,7 @@ describe PivotalTrackerCli::Client do
 
         it 'should finish the story' do
           expect {
-            subject.finish(id)
+            subject.update(id, 'finish')
           }.to output("Story ##{id} successfully finished.\n").to_stdout
         end
       end
@@ -192,7 +184,7 @@ describe PivotalTrackerCli::Client do
 
         it 'should close a chore' do
           expect {
-            subject.finish(id)
+            subject.update(id, 'finish')
           }.to output("Story ##{id} successfully accepted.\n").to_stdout
         end
       end

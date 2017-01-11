@@ -17,25 +17,22 @@ module PivotalTrackerCli
       @project_id = config['project_id']
       @username = config['username']
 
-      if config['username_to_user_id_map']
-        @username_to_user_id_map = config['username_to_user_id_map']
-      else
-        @username_to_user_id_map = PivotalTrackerCli::Api.get_all_users_for_project(@project_id, @api_token)
+      @story_statuses = {
+          'unstart' => 'unstarted',
+          'start' => 'started',
+          'deliver' => 'delivered',
+          'finish' => %w(finished accepted)
+      }
 
-        config['username_to_user_id_map'] = @username_to_user_id_map
-
-        File.open(ENV['HOME'] + '/.pt', 'w') do |f|
-          f.write config.to_yaml
-        end
-      end
+      build_or_assign_user_cache(config)
 
       super
     end
 
-    desc 'find_current_stories', 'This finds all current stories for a given user'
+    desc 'list', 'Lists all current stories for current user'
 
-    def find_current_stories
-      PivotalTrackerCli::Api.get_current_stories_for_user(@project_id, @api_token, @username).map do |story|
+    def list
+      get_current_stories_for_user.map do |story|
         output.puts('*' * 40)
 
         if story[:error]
@@ -50,44 +47,53 @@ module PivotalTrackerCli
       output.puts('*' * 40)
     end
 
-    desc 'get_story_by_id', 'This finds a specific story'
-
-    def get_story_by_id(id)
+    desc 'show [STORY_ID]', 'Shows a specific story'
+    def show(id)
       output.puts(get_story(id))
     end
 
-    desc 'start', 'Starts a specific story'
-
-    def start(id)
-      output.puts(update_story(id, 'started'))
-    end
-
-
-    desc 'unstart', 'Unstarts a specific story'
-
-    def unstart(id)
-      output.puts(update_story(id, 'unstarted'))
-    end
-
-    desc 'deliver', 'Delivers a specific story'
-
-    def deliver(id)
-      output.puts(update_story(id, 'delivered'))
-    end
-
-    desc 'finish', 'Finishes a specific story'
-
-    def finish(id)
-      story_type = get_story(id)[:type]
-
-      if story_type == 'chore'
-        output.puts(update_story(id, 'accepted'))
-      else
-        output.puts(update_story(id, 'finished'))
-      end
+    desc 'update [STORY_ID] [STATUS]', 'Updates the status of a story, available statuses are: unstart, start, deliver, finish'
+    def update(id, status)
+      validate_and_update_story(id, status)
     end
 
     private
+
+    def validate_and_update_story(id, status)
+      return output.puts('Invalid story status. Story statuses are: unstart, start, deliver, finish') unless @story_statuses[status]
+
+      story = get_story(id)
+
+      return output.puts('Story not found, please validate story number.') unless story
+
+      if status != 'finish'
+        output.puts(update_story(id, @story_statuses[status]))
+      else
+        if story[:type] == 'chore'
+          output.puts(update_story(id, 'accepted'))
+        else
+          output.puts(update_story(id, 'finished'))
+        end
+      end
+    end
+
+    def build_or_assign_user_cache(config)
+      if config['username_to_user_id_map']
+        @username_to_user_id_map = config['username_to_user_id_map']
+      else
+        @username_to_user_id_map = PivotalTrackerCli::Api.get_all_users_for_project(@project_id, @api_token)
+
+        config['username_to_user_id_map'] = @username_to_user_id_map
+
+        File.open(ENV['HOME'] + '/.pt', 'w') do |f|
+          f.write config.to_yaml
+        end
+      end
+    end
+
+    def get_current_stories_for_user
+      PivotalTrackerCli::Api.get_current_stories_for_user(@project_id, @api_token, @username)
+    end
 
     def get_story(id)
       PivotalTrackerCli::Api.get_story_by_id(@project_id, @api_token, id)

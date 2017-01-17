@@ -11,9 +11,9 @@ module PivotalTrackerCli
 
       member_map = {}
 
-        response.parsed_response.map do |member|
-          member_map[member['person']['username']] = member['person']['id']
-        end
+      response.parsed_response.map do |member|
+        member_map[member['person']['username']] = member['person']['id']
+      end
 
       member_map
     end
@@ -25,11 +25,7 @@ module PivotalTrackerCli
                               'X-TrackerToken': api_token
                           })
 
-      if response.success?
-        {type: response.parsed_response['story_type']}
-      else
-        {error: response.parsed_response.dig('error') || 'Failed to reach API.'}
-      end
+      OpenStruct.new(response.parsed_response) if response.success?
     end
 
     def self.update_story_state(project_id, api_token, id, state)
@@ -70,6 +66,22 @@ module PivotalTrackerCli
       else
         [{error: response.parsed_response.dig('error') || 'Failed to reach API.'}]
       end
+    end
+
+    def self.get_backlog_for_project(project_id, api_token, limit=3)
+      response = HTTParty.get("https://www.pivotaltracker.com/services/v5/projects/#{project_id}/iterations?limit=#{limit}",
+      headers: {
+          'X-TrackerToken': api_token
+      })
+
+      stories = []
+
+      response.parsed_response.each do |iteration|
+        iteration['stories'].each do |story|
+          stories.push(OpenStruct.new(story))
+        end
+      end
+      stories
     end
   end
 end

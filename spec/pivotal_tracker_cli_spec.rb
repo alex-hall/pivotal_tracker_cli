@@ -56,15 +56,17 @@ describe PivotalTrackerCli::Client do
             allow(PivotalTrackerCli::Api)
                 .to receive(:get_current_stories_for_user)
                         .with(project_id, api_token, username)
-                        .and_return([{
-                                         story_id: 1111111,
-                                         story_name: '**THIS** IS THE FIRST STORY',
-                                         status: 'accepted'
-                                     }, {
-                                         story_id: 2222222,
-                                         story_name: '**THIS** IS THE SECOND STORY',
-                                         status: 'rejected'
-                                     }])
+                        .and_return([
+                                        OpenStruct.new(
+                                            id: 1111111,
+                                            name: '**THIS** IS THE FIRST STORY',
+                                            current_state: 'accepted'
+                                        ),
+                                        OpenStruct.new(
+                                            id: 2222222,
+                                            name: '**THIS** IS THE SECOND STORY',
+                                            current_state: 'rejected'
+                                        )])
           end
 
           it 'print a friendly list of stories' do
@@ -84,29 +86,6 @@ describe PivotalTrackerCli::Client do
               subject.list
             }.to output(output).to_stdout
           end
-        end
-
-        context 'when something goes wrong' do
-          before do
-            allow(PivotalTrackerCli::Api)
-                .to receive(:get_current_stories_for_user)
-                        .and_return([{
-                                         error: 'SOME VERY BAD ERROR',
-                                     }])
-          end
-
-          it 'prints the error message' do
-            output =
-                <<~TEXT
-                  ****************************************
-                  Error: SOME VERY BAD ERROR
-                  ****************************************
-            TEXT
-            expect {
-              subject.list
-            }.to output(output).to_stdout
-          end
-
         end
       end
     end
@@ -151,7 +130,7 @@ describe PivotalTrackerCli::Client do
         before do
           allow(PivotalTrackerCli::Api)
               .to receive(:get_story_by_id)
-                      .with(project_id, api_token, id).and_return({type: 'story'})
+                      .with(project_id, api_token, id).and_return(OpenStruct.new(story_type: 'story'))
         end
 
         let(:updated_state) { 'finished' }
@@ -177,7 +156,7 @@ describe PivotalTrackerCli::Client do
 
           allow(PivotalTrackerCli::Api)
               .to receive(:get_story_by_id)
-                      .with(project_id, api_token, id).and_return({type: 'chore'})
+                      .with(project_id, api_token, id).and_return(OpenStruct.new(story_type: 'chore'))
         end
 
         let(:updated_state) { 'accepted' }
@@ -187,6 +166,37 @@ describe PivotalTrackerCli::Client do
             subject.update(id, 'finish')
           }.to output("Story ##{id} successfully accepted.\n").to_stdout
         end
+      end
+    end
+    describe '#backlog' do
+      before do
+        backlog_entry = OpenStruct.new(
+            id: 'SOME ID',
+            story_type: 'feature',
+            name: 'SOME STORY NAME',
+            description: 'SOME STORY DESCRIPTION',
+            current_state: 'unstarted',
+            requested_by_id: 22222,
+            owner_ids: [],
+            url: 'https://www.pivotaltracker.com/story/show/1111111'
+        )
+
+        allow(PivotalTrackerCli::Api)
+            .to receive(:get_backlog_for_project)
+                    .and_return([backlog_entry])
+      end
+
+      it 'should return an array of backlog entries' do
+        expected_output = <<~TEXT
+          ****************************************
+          Story ID: SOME ID
+          Story Name: SOME STORY NAME
+          Status: unstarted
+          ****************************************
+        TEXT
+        expect {
+          subject.backlog
+        }.to output(expected_output).to_stdout
       end
     end
   end

@@ -2,8 +2,6 @@ require 'spec_helper'
 require_relative '../lib/api'
 
 describe PivotalTrackerCli::Api do
-
-
   describe '#get_all_users_for_project' do
     context 'when retrieving users for the project' do
       let(:membership_response) do
@@ -215,26 +213,74 @@ describe PivotalTrackerCli::Api do
       end
 
       it 'should return the story details' do
-        expect(get_story_by_id[:type]).to eq('feature')
-      end
-    end
-
-    context 'when the story does not exist' do
-      let(:story_response) do
-        double(:response, success?: false, parsed_response:
-            {
-                'code' => 'invalid_parameter',
-                'kind' => 'error',
-                'error' => 'One or more request parameters was missing or invalid.',
-                'requirement' => 'The id parameter value was "BANANA" but must be of type int'
-            })
-      end
-
-      it 'should return an error' do
-        expect(get_story_by_id[:error]).to eq('One or more request parameters was missing or invalid.')
+        expect(get_story_by_id.story_type).to eq('feature')
       end
     end
   end
+
+
+  describe '#get_backlog_for_project' do
+    context 'when retrieving the backlog for a project' do
+      let(:response) do
+        double(:response, success?: true, parsed_response:
+            [{
+                 'number' => 99,
+                 'project_id' => 'SOME PROJECT ID',
+                 'length' => 1,
+                 'team_strength' => 1,
+                 'stories' => [
+                     {
+                         'kind' => 'story',
+                         'id' => 1111111,
+                         'created_at' => '2016-09-13T17:14:03Z',
+                         'updated_at' => '2017-01-11T15:02:16Z',
+                         'estimate' => 2,
+                         'story_type' => 'feature',
+                         'name' => 'SOME STORY NAME',
+                         'description' => 'SOME STORY DESCRIPTION',
+                         'current_state' => 'unstarted',
+                         'requested_by_id' => 22222,
+                         'url' => 'https://www.pivotaltracker.com/story/show/1111111',
+                         'project_id' => 3333333,
+                         'owner_ids' => [],
+                         'labels' => [
+                             {
+                                 'id' => 12,
+                                 'project_id' => 34,
+                                 'kind' => 'label',
+                                 'name' => 'ima tag',
+                                 'created_at' => '2016-09-13T17:20:32Z',
+                                 'updated_at' => '2016-09-13T17:20:32Z'
+                             }
+                         ]
+                     }]
+             }])
+      end
+
+      before do
+        allow(HTTParty)
+            .to receive(:get)
+                    .with('https://www.pivotaltracker.com/services/v5/projects/SOME PROJECT ID/iterations?limit=3',
+                    headers: {
+                        'X-TrackerToken': 'SOME API TOKEN'
+                    })
+                    .and_return(response)
+      end
+
+      it 'returns a list of the N most recent iterations' do
+        stories = PivotalTrackerCli::Api.get_backlog_for_project('SOME PROJECT ID', 'SOME API TOKEN')
+        story = stories.first
+        expect(story.story_type).to eq('feature')
+        expect(story.name).to eq('SOME STORY NAME')
+        expect(story.description).to eq('SOME STORY DESCRIPTION')
+        expect(story.current_state).to eq('unstarted')
+        expect(story.requested_by_id).to eq(22222)
+        expect(story.owner_ids).to eq([])
+        expect(story.url).to eq('https://www.pivotaltracker.com/story/show/1111111')
+      end
+    end
+  end
+
 
   let(:parsed_story_list_response) do
     {

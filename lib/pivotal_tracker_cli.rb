@@ -34,25 +34,21 @@ module PivotalTrackerCli
     def list
       get_current_stories_for_user.map do |story|
         output.puts('*' * 40)
-
-        if story[:error]
-          output.puts("Error: #{story[:error]}")
-        else
-          output.puts("Story ID: #{story[:story_id]}")
-          output.puts("Story Name: #{story[:story_name]}")
-          output.puts("Status: #{story[:status]}")
-        end
-
+        output.puts("Story ID: #{story.id}")
+        output.puts("Story Name: #{story.name}")
+        output.puts("Status: #{story.current_state}")
       end
       output.puts('*' * 40)
     end
 
     desc 'show [STORY_ID]', 'Shows a specific story'
+
     def show(id)
       output.puts(get_story(id))
     end
 
     desc 'update [STORY_ID] [STATUS]', 'Updates the status of a story, available statuses are: unstart, start, deliver, finish'
+
     def update(id, status)
       validate_and_update_story(id, status)
     end
@@ -69,7 +65,7 @@ module PivotalTrackerCli
       if status != 'finish'
         output.puts(update_story(id, @story_statuses[status]))
       else
-        if story[:type] == 'chore'
+        if story.story_type == 'chore'
           output.puts(update_story(id, 'accepted'))
         else
           output.puts(update_story(id, 'finished'))

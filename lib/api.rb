@@ -25,11 +25,7 @@ module PivotalTrackerCli
                               'X-TrackerToken': api_token
                           })
 
-      if response.success?
-        {type: response.parsed_response['story_type']}
-      else
-        {error: response.parsed_response.dig('error') || 'Failed to reach API.'}
-      end
+      OpenStruct.new(response.parsed_response) if response.success?
     end
 
     def self.update_story_state(project_id, api_token, id, state)

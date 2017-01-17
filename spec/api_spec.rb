@@ -2,8 +2,6 @@ require 'spec_helper'
 require_relative '../lib/api'
 
 describe PivotalTrackerCli::Api do
-
-
   describe '#get_all_users_for_project' do
     context 'when retrieving users for the project' do
       let(:membership_response) do
@@ -215,23 +213,12 @@ describe PivotalTrackerCli::Api do
       end
 
       it 'should return the story details' do
-        expect(get_story_by_id[:type]).to eq('feature')
+        expect(get_story_by_id.story_type).to eq('feature')
       end
     end
 
-    context 'when the story does not exist' do
-      let(:story_response) do
-        double(:response, success?: false, parsed_response:
-            {
-                'code' => 'invalid_parameter',
-                'kind' => 'error',
-                'error' => 'One or more request parameters was missing or invalid.',
-                'requirement' => 'The id parameter value was "BANANA" but must be of type int'
-            })
       end
 
-      it 'should return an error' do
-        expect(get_story_by_id[:error]).to eq('One or more request parameters was missing or invalid.')
       end
     end
   end

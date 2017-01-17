@@ -168,5 +168,36 @@ describe PivotalTrackerCli::Client do
         end
       end
     end
+    describe '#backlog' do
+      before do
+        backlog_entry = OpenStruct.new(
+            id: 'SOME ID',
+            story_type: 'feature',
+            name: 'SOME STORY NAME',
+            description: 'SOME STORY DESCRIPTION',
+            current_state: 'unstarted',
+            requested_by_id: 22222,
+            owner_ids: [],
+            url: 'https://www.pivotaltracker.com/story/show/1111111'
+        )
+
+        allow(PivotalTrackerCli::Api)
+            .to receive(:get_backlog_for_project)
+                    .and_return([backlog_entry])
+      end
+
+      it 'should return an array of backlog entries' do
+        expected_output = <<~TEXT
+          ****************************************
+          Story ID: SOME ID
+          Story Name: SOME STORY NAME
+          Status: unstarted
+          ****************************************
+        TEXT
+        expect {
+          subject.backlog
+        }.to output(expected_output).to_stdout
+      end
+    end
   end
 end

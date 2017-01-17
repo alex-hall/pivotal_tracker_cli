@@ -53,6 +53,17 @@ module PivotalTrackerCli
       validate_and_update_story(id, status)
     end
 
+    desc 'backlog', 'Displays the N most recent iterations in the backlog'
+    def backlog
+      get_backlog(3).map do |story|
+        output.puts('*' * 40)
+        output.puts("Story ID: #{story.id}")
+        output.puts("Story Name: #{story.name}")
+        output.puts("Status: #{story.current_state}")
+      end
+      output.puts('*' * 40)
+    end
+
     private
 
     def validate_and_update_story(id, status)
@@ -85,6 +96,10 @@ module PivotalTrackerCli
           f.write config.to_yaml
         end
       end
+    end
+
+    def get_backlog(iterations)
+      PivotalTrackerCli::Api.get_backlog_for_project(@project_id, @api_token, iterations)
     end
 
     def get_current_stories_for_user

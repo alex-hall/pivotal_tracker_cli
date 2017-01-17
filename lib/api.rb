@@ -11,9 +11,9 @@ module PivotalTrackerCli
 
       member_map = {}
 
-        response.parsed_response.map do |member|
-          member_map[member['person']['username']] = member['person']['id']
-        end
+      response.parsed_response.map do |member|
+        member_map[member['person']['username']] = member['person']['id']
+      end
 
       member_map
     end

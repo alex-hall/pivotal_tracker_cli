@@ -11,9 +11,10 @@ describe PivotalTrackerCli::Client do
     let(:file_double) { double(:file, write: true) }
 
     user_map = {
-        'TEST_TEST' => 123456,
-        'OTHER_TEST' => 444444
+        'LIL_BOAT' => { id: 123456, name: 'Lil\' Yachty'},
+        'THUGGER_THUGGER' => {id: 444444, name: 'Young Thug'}
     }
+
     before do
       allow(YAML)
           .to receive(:load_file)
@@ -28,8 +29,11 @@ describe PivotalTrackerCli::Client do
                   .with(project_id, api_token)
                   .and_return(user_map)
 
+      String.disable_colorization = true
+
       allow(ENV).to receive(:[]).with(anything).and_call_original
       allow(ENV).to receive(:[]).with('HOME').and_return('HOME_PATH')
+      allow(ENV).to receive(:[]).with('DISABLE_MARKDOWN').and_return('true')
 
       allow(File).to receive(:open).with('HOME_PATH/.pt', 'w') {}
     end
@@ -60,12 +64,18 @@ describe PivotalTrackerCli::Client do
                                         OpenStruct.new(
                                             id: 1111111,
                                             name: '**THIS** IS THE FIRST STORY',
+                                            story_type: 'feature',
+                                            owner_ids: [123456, 444444],
+                                            description: 'SOME SUPER LONG DESCRIPTION',
                                             current_state: 'accepted'
                                         ),
                                         OpenStruct.new(
                                             id: 2222222,
-                                            name: '**THIS** IS THE SECOND STORY',
-                                            current_state: 'rejected'
+                                            name: '**THIS** IS A CHORE',
+                                            story_type: 'chore',
+                                            owner_ids: [],
+                                            description: 'SOME SUPER LONG DESCRIPTION',
+                                            current_state: 'started'
                                         )])
           end
 
@@ -73,13 +83,21 @@ describe PivotalTrackerCli::Client do
             output =
                 <<~TEXT
                   ****************************************
-                  Story ID: 1111111
-                  Story Name: **THIS** IS THE FIRST STORY
-                  Status: accepted
+                  Story ID          : 1111111
+                  Status            : accepted
+                  Story Type        : feature
+                  Story Name        : **THIS** IS THE FIRST STORY
+                  Owners            : Lil' Yachty, Young Thug
+                  Story Description :
+                                                SOME SUPER LONG DESCRIPTION
                   ****************************************
-                  Story ID: 2222222
-                  Story Name: **THIS** IS THE SECOND STORY
-                  Status: rejected
+                  Story ID          : 2222222
+                  Status            : started
+                  Story Type        : chore
+                  Story Name        : **THIS** IS A CHORE
+                  Owners            : unassigned
+                  Story Description :
+                                                SOME SUPER LONG DESCRIPTION
                   ****************************************
             TEXT
             expect {
@@ -177,7 +195,7 @@ describe PivotalTrackerCli::Client do
             description: 'SOME STORY DESCRIPTION',
             current_state: 'unstarted',
             requested_by_id: 22222,
-            owner_ids: [],
+            owner_ids: [123456],
             url: 'https://www.pivotaltracker.com/story/show/1111111'
         )
 
@@ -187,16 +205,10 @@ describe PivotalTrackerCli::Client do
       end
 
       it 'should return an array of backlog entries' do
-        expected_output = <<~TEXT
-          ****************************************
-          Story ID: SOME ID
-          Story Name: SOME STORY NAME
-          Status: unstarted
-          ****************************************
-        TEXT
         expect {
           subject.backlog
-        }.to output(expected_output).to_stdout
+        }.to output("* SOME ID - unstarted - SOME STORY NAME <Lil' Yachty>\n").to_stdout
+
       end
     end
   end

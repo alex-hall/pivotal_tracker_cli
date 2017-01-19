@@ -1,7 +1,7 @@
 module PivotalTrackerCli
   class HashManager
     def self.get_owner_name_from_ids(owners, username_to_user_id_map)
-      return '' if owners.empty?
+      return 'unassigned' if owners.empty?
 
       owners.map do |owner|
         find_name_given_id(owner, username_to_user_id_map)

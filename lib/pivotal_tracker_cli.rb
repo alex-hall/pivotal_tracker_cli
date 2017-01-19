@@ -3,6 +3,8 @@ require 'httparty'
 require 'awesome_print'
 require 'thor'
 require 'byebug'
+require 'colorize'
+require 'colorized_string'
 require_relative 'api'
 require_relative 'string_utilities'
 require_relative 'user_cache'
@@ -36,9 +38,7 @@ module PivotalTrackerCli
     def list
       get_current_stories_for_user.map do |story|
         output.puts('*' * 40)
-        output.puts("Story ID: #{story.id}")
-        output.puts("Story Name: #{story.name}")
-        output.puts("Status: #{story.current_state}")
+        format_story(story)
       end
       output.puts('*' * 40)
     end
@@ -46,7 +46,7 @@ module PivotalTrackerCli
     desc 'show [STORY_ID]', 'Shows a specific story'
 
     def show(id)
-      output.puts(get_story(id))
+      format_story(get_story(id))
     end
 
     desc 'update [STORY_ID] [STATUS]', 'Updates the status of a story, available statuses are: unstart, start, deliver, finish'
@@ -55,15 +55,12 @@ module PivotalTrackerCli
       validate_and_update_story(id, status)
     end
 
-    desc 'backlog', 'Displays the N most recent iterations in the backlog'
+    desc 'backlog', 'Displays all stores for the 3 most recent iterations in the backlog'
+
     def backlog
       get_backlog(3).map do |story|
-        output.puts('*' * 40)
-        output.puts("Story ID: #{story.id}")
-        output.puts("Story Name: #{story.name}")
-        output.puts("Status: #{story.current_state}")
+        output.puts("* #{story.id.to_s.red} - #{colorize_status(story.current_state)} - #{embiggen_string(story.name)} <#{get_owner_name_from_ids(story.owner_ids).yellow}>")
       end
-      output.puts('*' * 40)
     end
 
     desc 'refresh', 'Refreshes the user cache for tracker'
@@ -90,6 +87,20 @@ module PivotalTrackerCli
           output.puts(update_story(id, 'finished'))
         end
       end
+    end
+
+
+    def format_story(story)
+      output.puts("#{'Story ID'.bold}          : #{story.id}")
+      output.puts("#{'Status'.bold}            : #{colorize_status(story.current_state)}")
+      output.puts("#{'Story Type'.bold}        : #{story.story_type}")
+      output.puts("#{'Story Name'.bold}        : #{embiggen_string(story.name)}")
+      output.puts("#{'Owners'.bold}            : #{get_owner_name_from_ids(story.owner_ids).yellow}")
+      output.puts("#{'Story Description'.bold} :")
+      output.puts("                    #{wrap(embiggen_string(story.description), 150, 10)}")
+    end
+    def wrap(s, width=150, offset=0)
+      s.gsub(/(.{1,#{width}})(\s+|\Z)/, "#{' '* offset}\\1\n")
     end
 
     def get_owner_name_from_ids(owners)

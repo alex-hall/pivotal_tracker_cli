@@ -4,6 +4,8 @@ require 'awesome_print'
 require 'thor'
 require 'byebug'
 require_relative 'api'
+require_relative 'user_cache'
+require_relative 'hash_manager'
 
 module PivotalTrackerCli
   class Client < Thor
@@ -11,11 +13,11 @@ module PivotalTrackerCli
     attr_reader :username_to_user_id_map
 
     def initialize(args, local_options, config)
-      config = YAML.load_file(ENV['HOME'] + '/.pt')
+      @config = YAML.load_file(ENV['HOME'] + '/.pt')
 
-      @api_token = config['api_token']
-      @project_id = config['project_id']
-      @username = config['username']
+      @api_token = @config['api_token']
+      @project_id = @config['project_id']
+      @username = @config['username']
 
       @story_statuses = {
           'unstart' => 'unstarted',
@@ -24,8 +26,7 @@ module PivotalTrackerCli
           'finish' => %w(finished accepted)
       }
 
-      build_or_assign_user_cache(config)
-
+      @username_to_user_id_map = build_or_assign_user_cache(@config)
       super
     end
 
@@ -64,6 +65,12 @@ module PivotalTrackerCli
       output.puts('*' * 40)
     end
 
+    desc 'refresh', 'Refreshes the user cache for tracker'
+
+    def refresh
+      rebuild_user_cache(@config)
+    end
+
     private
 
     def validate_and_update_story(id, status)
@@ -84,18 +91,22 @@ module PivotalTrackerCli
       end
     end
 
+    def get_owner_name_from_ids(owners)
+      PivotalTrackerCli::HashManager.get_owner_name_from_ids(owners, @username_to_user_id_map)
+    end
+
+    def find_name_given_id(owners)
+      PivotalTrackerCli::HashManager.find_name_given_id(owners, @username_to_user_id_map)
+    end
+
     def build_or_assign_user_cache(config)
-      if config['username_to_user_id_map']
-        @username_to_user_id_map = config['username_to_user_id_map']
-      else
-        @username_to_user_id_map = PivotalTrackerCli::Api.get_all_users_for_project(@project_id, @api_token)
+      PivotalTrackerCli::UserCache.build_or_assign_user_cache(config, @project_id, @api_token)
+    end
 
-        config['username_to_user_id_map'] = @username_to_user_id_map
+    def rebuild_user_cache(config)
+      PivotalTrackerCli::UserCache.rebuild_user_cache(config, @project_id, @api_token)
+    end
 
-        File.open(ENV['HOME'] + '/.pt', 'w') do |f|
-          f.write config.to_yaml
-        end
-      end
     end
 
     def get_backlog(iterations)

@@ -53,8 +53,8 @@ describe PivotalTrackerCli::Api do
       it 'should return a key value pair of username and user id' do
         user_hash =
             {
-                'TEST_TEST' => 123456,
-                'OTHER_TEST' => 444444
+                'TEST_TEST' => { id: 123456, name: 'TEST R. TESTER' },
+                'OTHER_TEST' => { id: 444444, name: 'OTHER R. TESTER' }
             }
         expect(PivotalTrackerCli::Api.get_all_users_for_project('SOME PROJECT ID', 'SOME API TOKEN')).to eq(user_hash)
       end
@@ -97,28 +97,14 @@ describe PivotalTrackerCli::Api do
 
       it 'returns a list of stories' do
         stories = PivotalTrackerCli::Api.get_current_stories_for_user('PROJECT_ID', 'SOME API TOKEN', 'USERNAME')
-        expect(stories[0][:story_id]).to eq(838383838)
-        expect(stories[0][:story_name]).to eq('**THIS** IS THE FIRST STORY')
-        expect(stories[0][:status]).to eq('accepted')
-        expect(stories[1][:story_id]).to eq(484848484)
-        expect(stories[1][:story_name]).to eq('**THIS** IS THE SECOND STORY')
-        expect(stories[1][:status]).to eq('rejected')
+        expect(stories[0].id).to eq(838383838)
+        expect(stories[0].name).to eq('**THIS** IS THE FIRST STORY')
+        expect(stories[0].current_state).to eq('accepted')
+        expect(stories[1].id).to eq(484848484)
+        expect(stories[1].name).to eq('**THIS** IS THE SECOND STORY')
+        expect(stories[1].current_state).to eq('rejected')
       end
     end
-
-    context 'when the service call returns an error' do
-      before do
-        allow(HTTParty)
-            .to receive(:get)
-                    .and_return(double(:response, success?: false, parsed_response: {'error' => 'SOME BAD ERROR'}))
-      end
-
-      it 'returns a list containing the error' do
-        stories = PivotalTrackerCli::Api.get_current_stories_for_user('PROJECT_ID', 'SOME API TOKEN', 'USERNAME')
-        expect(stories[0][:error]).to eq('SOME BAD ERROR')
-      end
-    end
-
   end
 
   describe '#update_story_state' do
@@ -260,7 +246,7 @@ describe PivotalTrackerCli::Api do
       before do
         allow(HTTParty)
             .to receive(:get)
-                    .with('https://www.pivotaltracker.com/services/v5/projects/SOME PROJECT ID/iterations?limit=3',
+                    .with('https://www.pivotaltracker.com/services/v5/projects/SOME PROJECT ID/iterations?scope=current_backlog&limit=3',
                     headers: {
                         'X-TrackerToken': 'SOME API TOKEN'
                     })

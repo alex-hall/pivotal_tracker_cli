@@ -4,6 +4,7 @@ require 'awesome_print'
 require 'thor'
 require 'byebug'
 require_relative 'api'
+require_relative 'string_utilities'
 require_relative 'user_cache'
 require_relative 'hash_manager'
 
@@ -107,6 +108,12 @@ module PivotalTrackerCli
       PivotalTrackerCli::UserCache.rebuild_user_cache(config, @project_id, @api_token)
     end
 
+    def embiggen_string(string)
+      PivotalTrackerCli::StringUtilities.embiggen_string(string)
+    end
+
+    def colorize_status(status)
+      PivotalTrackerCli::StringUtilities.colorize_status(status)
     end
 
     def get_backlog(iterations)

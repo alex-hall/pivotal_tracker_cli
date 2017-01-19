@@ -12,7 +12,7 @@ module PivotalTrackerCli
       member_map = {}
 
       response.parsed_response.map do |member|
-        member_map[member['person']['username']] = member['person']['id']
+        member_map[member['person']['username']] = { id: member['person']['id'], name: member['person']['name'] }
       end
 
       member_map
@@ -39,11 +39,7 @@ module PivotalTrackerCli
           }
       )
 
-      if response.success?
-        "Story ##{id} successfully #{state}."
-      else
-        response.parsed_response.dig('error') || 'Failed to reach API.'
-      end
+      "Story ##{id} successfully #{state}." if response.success?
     end
 
     def self.get_current_stories_for_user(project_id, api_token, username)
@@ -55,24 +51,22 @@ module PivotalTrackerCli
                           headers: {
                               'X-TrackerToken': api_token
                           })
-      if response.success?
-        response.parsed_response['stories']['stories'].map do |story|
-          {
-              story_id: story['id'],
-              story_name: story['name'],
-              status: story['current_state']
-          }
-        end
-      else
-        [{error: response.parsed_response.dig('error') || 'Failed to reach API.'}]
-      end
+
+      story_list = []
+
+      response.parsed_response['stories']['stories'].map { |story| story_list.push(OpenStruct.new(story)) } if response.success?
+
+      story_list
     end
 
     def self.get_backlog_for_project(project_id, api_token, limit=3)
-      response = HTTParty.get("https://www.pivotaltracker.com/services/v5/projects/#{project_id}/iterations?limit=#{limit}",
-      headers: {
-          'X-TrackerToken': api_token
-      })
+
+      endpoint = "https://www.pivotaltracker.com/services/v5/projects/#{project_id}/iterations?scope=current_backlog&limit=#{limit}"
+
+      response = HTTParty.get(endpoint,
+                              headers: {
+                                  'X-TrackerToken': api_token
+                              })
 
       stories = []
 

@@ -3,7 +3,12 @@ require 'httparty'
 require 'awesome_print'
 require 'thor'
 require 'byebug'
+require 'colorize'
+require 'colorized_string'
 require_relative 'api'
+require_relative 'string_utilities'
+require_relative 'user_cache'
+require_relative 'hash_manager'
 
 module PivotalTrackerCli
   class Client < Thor
@@ -11,11 +16,11 @@ module PivotalTrackerCli
     attr_reader :username_to_user_id_map
 
     def initialize(args, local_options, config)
-      config = YAML.load_file(ENV['HOME'] + '/.pt')
+      @config = YAML.load_file(ENV['HOME'] + '/.pt')
 
-      @api_token = config['api_token']
-      @project_id = config['project_id']
-      @username = config['username']
+      @api_token = @config['api_token']
+      @project_id = @config['project_id']
+      @username = @config['username']
 
       @story_statuses = {
           'unstart' => 'unstarted',
@@ -24,8 +29,7 @@ module PivotalTrackerCli
           'finish' => %w(finished accepted)
       }
 
-      build_or_assign_user_cache(config)
-
+      @username_to_user_id_map = build_or_assign_user_cache(@config)
       super
     end
 
@@ -34,9 +38,7 @@ module PivotalTrackerCli
     def list
       get_current_stories_for_user.map do |story|
         output.puts('*' * 40)
-        output.puts("Story ID: #{story.id}")
-        output.puts("Story Name: #{story.name}")
-        output.puts("Status: #{story.current_state}")
+        format_story(story)
       end
       output.puts('*' * 40)
     end
@@ -44,7 +46,7 @@ module PivotalTrackerCli
     desc 'show [STORY_ID]', 'Shows a specific story'
 
     def show(id)
-      output.puts(get_story(id))
+      format_story(get_story(id))
     end
 
     desc 'update [STORY_ID] [STATUS]', 'Updates the status of a story, available statuses are: unstart, start, deliver, finish'
@@ -53,15 +55,18 @@ module PivotalTrackerCli
       validate_and_update_story(id, status)
     end
 
-    desc 'backlog', 'Displays the N most recent iterations in the backlog'
+    desc 'backlog', 'Displays all stores for the 3 most recent iterations in the backlog'
+
     def backlog
       get_backlog(3).map do |story|
-        output.puts('*' * 40)
-        output.puts("Story ID: #{story.id}")
-        output.puts("Story Name: #{story.name}")
-        output.puts("Status: #{story.current_state}")
+        output.puts("* #{story.id.to_s.red} - #{colorize_status(story.current_state)} - #{embiggen_string(story.name)} <#{get_owner_name_from_ids(story.owner_ids).yellow}>")
       end
-      output.puts('*' * 40)
+    end
+
+    desc 'refresh', 'Refreshes the user cache for tracker'
+
+    def refresh
+      rebuild_user_cache(@config)
     end
 
     private
@@ -84,18 +89,42 @@ module PivotalTrackerCli
       end
     end
 
+
+    def format_story(story)
+      output.puts("#{'Story ID'.bold}          : #{story.id}")
+      output.puts("#{'Status'.bold}            : #{colorize_status(story.current_state)}")
+      output.puts("#{'Story Type'.bold}        : #{story.story_type}")
+      output.puts("#{'Story Name'.bold}        : #{embiggen_string(story.name)}")
+      output.puts("#{'Owners'.bold}            : #{get_owner_name_from_ids(story.owner_ids).yellow}")
+      output.puts("#{'Story Description'.bold} :")
+      output.puts("                    #{wrap(embiggen_string(story.description), 150, 10)}")
+    end
+    def wrap(s, width=150, offset=0)
+      s.gsub(/(.{1,#{width}})(\s+|\Z)/, "#{' '* offset}\\1\n")
+    end
+
+    def get_owner_name_from_ids(owners)
+      PivotalTrackerCli::HashManager.get_owner_name_from_ids(owners, @username_to_user_id_map)
+    end
+
+    def find_name_given_id(owners)
+      PivotalTrackerCli::HashManager.find_name_given_id(owners, @username_to_user_id_map)
+    end
+
     def build_or_assign_user_cache(config)
-      if config['username_to_user_id_map']
-        @username_to_user_id_map = config['username_to_user_id_map']
-      else
-        @username_to_user_id_map = PivotalTrackerCli::Api.get_all_users_for_project(@project_id, @api_token)
+      PivotalTrackerCli::UserCache.build_or_assign_user_cache(config, @project_id, @api_token)
+    end
 
-        config['username_to_user_id_map'] = @username_to_user_id_map
+    def rebuild_user_cache(config)
+      PivotalTrackerCli::UserCache.rebuild_user_cache(config, @project_id, @api_token)
+    end
 
-        File.open(ENV['HOME'] + '/.pt', 'w') do |f|
-          f.write config.to_yaml
-        end
-      end
+    def embiggen_string(string)
+      PivotalTrackerCli::StringUtilities.embiggen_string(string)
+    end
+
+    def colorize_status(status)
+      PivotalTrackerCli::StringUtilities.colorize_status(status)
     end
 
     def get_backlog(iterations)

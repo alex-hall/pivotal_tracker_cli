@@ -1,38 +1,100 @@
 # PivotalTrackerCli
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/pivotal/tracker/cli`. To experiment with that code, run `bin/console` for an interactive prompt.
+The purpose of this gem is to facilitate the day to day  **engineering** workflow with Pivotal Tracker.
+  
+This gem is not intended to be a 1:1 cli replacement for the tracker website/app.
 
-TODO: Delete this and the text above, and describe your gem
+Current features:
+- Get all stories assigned to a given user
+- Grep the 3 latest iterations from the backlog (including status and assigned to)
+- Show basic details about any specific story
+- Update the status of any available story/chore
+- Colorized and markdown formatted story output
+
+TODOs: 
+- Make the current user configurable via command line
+- Make the # of iterations configurable
+- Make initial pt file configurable via command line
+- Better error handling for initial setup & general error messages from Tracker API
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'pivotal_tracker_cli'
-```
-
-And then execute:
+To pull in dependencies, simply run:
 
     $ bundle
 
-Or install it yourself as:
+## Setup
 
-    $ gem install pivotal_tracker_cli
+In order to use the gem you must first create a .pt file in the home directory: 
+
+```bash
+vim ~/.pt
+```
+
+Fill in the following details, and paste into the file: 
+
+```yml
+
+---
+api_token: <API TOKEN HERE>
+project_id: <PROJECT ID HERE>
+username: <USERNAME HERE>
+```
+
+Write, quit, and you're done!
+
+NOTE: Details about getting an API token can be found in the [tracker API documentation](https://www.pivotaltracker.com/help/api/#Getting_Started): 
 
 ## Usage
 
-TODO: Write usage instructions here
+The current commands for the gem are: 
+
+```
+Commands:
+  pt backlog                     # Displays all stores for the 3 most recent iterations in the backlog
+  pt help [COMMAND]              # Describe available commands or one specific command
+  pt list                        # Lists all current stories for current user
+  pt refresh                     # Refreshes the user cache from Tracker
+  pt show [STORY_ID]             # Shows a specific story
+  pt update [STORY_ID] [STATUS]  # Updates the status of a story, available statuses are: unstart, start, deliver, finish
+  ```
+
+
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+To run the gem in development mode, simple cd to the project directory and run the following command: 
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```bash
+    bundle exec ./bin/pt
+```
+
+Once you're happy with the functionality you've built, simply bump the version in ```/lib/pivotal_tracker_cli/version.rb``` and run ```rake relase```.
+
+This will output a gem to the ```pkg``` directory which you can then run ```gem install pkg/pivotal_tracker_cli-X.X.X.gem```.
+Once you've installed the gem you can just use the ```pt``` namespace in your shell.  
+
+NOTE: X.X.X in the example above is a place holder for the major, minor, and patch release versions. 
+
+
+TODO: Push gem to Rubygems!!
+ 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/pivotal_tracker_cli. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+In order to contribute, please create an issue to discuss the feature/bug/enhancement. If a pull request is in order, 
+fork the repository, create a branch off of master, and make commits with very descriptive, passing commits. 
+
+Please note that **_ALL_** code must be test driven to be accepted into the repository. No exceptions.
+
+
+## Contributors
+
+@alex-hall
+
+@WRMilling
+
+@lm185074
 
 
 ## License

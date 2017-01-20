@@ -59,7 +59,7 @@ module PivotalTrackerCli
 
     def backlog
       get_backlog(3).map do |story|
-        output.puts("* #{story.id.to_s.red} - #{colorize_status(story.current_state)} - #{embiggen_string(story.name)} <#{get_owner_name_from_ids(story.owner_ids).yellow}>")
+        output.puts("* #{story.id.to_s.red} - #{colorize_status(story.current_state)} - #{embiggen_string(story.name)} <#{get_owner_name_from_ids(story.owner_ids)}>")
       end
     end
 

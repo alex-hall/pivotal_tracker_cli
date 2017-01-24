@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email = ['me@jalexhall.com']
 
   spec.summary = 'This gem is supposed to be used for dev purposes'
-  spec.description = 'Simple integration with pivotal-tracker gem'
+  spec.description = 'Simple integration with pivotal-tracker API'
   spec.homepage = 'http://github.com/alex-hall/pivotal_tracker_cli'
   spec.license = 'MIT'
 

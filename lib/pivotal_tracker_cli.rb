@@ -20,7 +20,7 @@ module PivotalTrackerCli
 
       @api_token = @config['api_token']
       @project_id = @config['project_id']
-      @username = @config['username']
+      @usernames = @config['usernames']
 
       @story_statuses = {
           'unstart' => 'unstarted',
@@ -132,7 +132,7 @@ module PivotalTrackerCli
     end
 
     def get_current_stories_for_user
-      PivotalTrackerCli::Api.get_current_stories_for_user(@project_id, @api_token, @username)
+      PivotalTrackerCli::Api.get_current_stories_for_user(@project_id, @api_token, @usernames)
     end
 
     def get_story(id)
@@ -140,11 +140,15 @@ module PivotalTrackerCli
     end
 
     def update_story(id, status)
-      PivotalTrackerCli::Api.update_story_state(@project_id, @api_token, id, status)
+      PivotalTrackerCli::Api.update_story_state(@project_id, @api_token, id, status, get_user_ids_from_usernames(@username_to_user_id_map, @usernames))
     end
 
     def output
       @output ||= $stdout
+    end
+
+    def get_user_ids_from_usernames(user_map, username)
+      PivotalTrackerCli::UserCache.get_user_ids_from_usernames(user_map, username)
     end
   end
 end

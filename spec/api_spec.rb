@@ -87,7 +87,7 @@ describe PivotalTrackerCli::Api do
             .to receive(:get)
                     .with('https://www.pivotaltracker.com/services/v5/projects/PROJECT_ID/search', {
                         query: {
-                            query: 'owner:"USERNAME"'
+                            query: 'owner:"USERNAME" OR owner:"OTHERUSER"'
                         },
                         headers: {
                             'X-TrackerToken': 'SOME API TOKEN'
@@ -96,7 +96,7 @@ describe PivotalTrackerCli::Api do
       end
 
       it 'returns a list of stories' do
-        stories = PivotalTrackerCli::Api.get_current_stories_for_user('PROJECT_ID', 'SOME API TOKEN', 'USERNAME')
+        stories = PivotalTrackerCli::Api.get_current_stories_for_user('PROJECT_ID', 'SOME API TOKEN', %w(USERNAME OTHERUSER))
         expect(stories[0].id).to eq(838383838)
         expect(stories[0].name).to eq('**THIS** IS THE FIRST STORY')
         expect(stories[0].current_state).to eq('accepted')
@@ -109,6 +109,8 @@ describe PivotalTrackerCli::Api do
 
   describe '#update_story_state' do
     context 'when manipulating story states' do
+      let(:owner_ids) { [1708934, 1824528] }
+
       let(:parsed_story_update_response) do
         {
             'kind' => 'story',
@@ -120,7 +122,7 @@ describe PivotalTrackerCli::Api do
             'current_state' => updated_state,
             'accepted_at' => '2017-01-04T18:46:24Z',
             'requested_by_id' => 444444,
-            'owner_ids' => [],
+            'owner_ids' => [1708934, 1824528],
             'labels' => [],
             'created_at' => '2017-01-03T15:40:00Z',
             'updated_at' => '2017-01-04T18:46:25Z',
@@ -145,7 +147,8 @@ describe PivotalTrackerCli::Api do
                               'X-TrackerToken': 'SOME API TOKEN'
                           },
                           body: {
-                              'current_state': updated_state
+                              'current_state': updated_state,
+                              'owner_ids': owner_ids
                           }
                     ).and_return(double(:response, success?: true, parsed_response: parsed_story_update_response))
       end
@@ -156,7 +159,7 @@ describe PivotalTrackerCli::Api do
 
         context 'and the story id exists' do
           it 'should updated the status' do
-            expect(PivotalTrackerCli::Api.update_story_state('PROJECT_ID', 'SOME API TOKEN', 4321000, updated_state))
+            expect(PivotalTrackerCli::Api.update_story_state('PROJECT_ID', 'SOME API TOKEN', 4321000, updated_state, owner_ids))
                 .to eq('Story #4321000 successfully started.')
           end
         end
@@ -203,7 +206,6 @@ describe PivotalTrackerCli::Api do
       end
     end
   end
-
 
   describe '#get_backlog_for_project' do
     context 'when retrieving the backlog for a project' do
@@ -266,7 +268,6 @@ describe PivotalTrackerCli::Api do
       end
     end
   end
-
 
   let(:parsed_story_list_response) do
     {

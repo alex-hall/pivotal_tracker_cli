@@ -28,25 +28,31 @@ module PivotalTrackerCli
       OpenStruct.new(response.parsed_response) if response.success?
     end
 
-    def self.update_story_state(project_id, api_token, id, state)
+    def self.update_story_state(project_id, api_token, id, state, owner_ids)
       response = HTTParty.put(
           "https://www.pivotaltracker.com/services/v5/projects/#{project_id}/stories/#{id.to_s}",
           headers: {
               'X-TrackerToken': api_token
           },
           body: {
-              'current_state': state
+              'current_state': state,
+              'owner_ids': owner_ids
           }
       )
 
       "Story ##{id} successfully #{state}." if response.success?
     end
 
-    def self.get_current_stories_for_user(project_id, api_token, username)
+    def self.get_current_stories_for_user(project_id, api_token, usernames)
+      search_term = usernames.map do |username|
+        "owner:\"#{username}\""
+      end.join(' OR ')
+
+
       response = HTTParty
                      .get("https://www.pivotaltracker.com/services/v5/projects/#{project_id}/search",
                           query: {
-                              query: "owner:\"#{username}\""
+                              query: search_term
                           },
                           headers: {
                               'X-TrackerToken': api_token

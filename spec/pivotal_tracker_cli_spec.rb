@@ -6,12 +6,12 @@ describe PivotalTrackerCli::Client do
 
     let(:api_token) { 'SECRET API TOKEN' }
     let(:project_id) { 'PROJECT ID' }
-    let(:username) { 'USERNAME' }
+    let(:usernames) { %w(LIL_BOAT THUGGER_THUGGER) }
 
     let(:file_double) { double(:file, write: true) }
 
     user_map = {
-        'LIL_BOAT' => { id: 123456, name: 'Lil\' Yachty'},
+        'LIL_BOAT' => {id: 123456, name: 'Lil\' Yachty'},
         'THUGGER_THUGGER' => {id: 444444, name: 'Young Thug'}
     }
 
@@ -21,7 +21,7 @@ describe PivotalTrackerCli::Client do
                   .and_return({
                                   'api_token' => api_token,
                                   'project_id' => project_id,
-                                  'username' => username
+                                  'usernames' => usernames
                               })
 
       allow(PivotalTrackerCli::Api)
@@ -59,7 +59,7 @@ describe PivotalTrackerCli::Client do
           before do
             allow(PivotalTrackerCli::Api)
                 .to receive(:get_current_stories_for_user)
-                        .with(project_id, api_token, username)
+                        .with(project_id, api_token, usernames)
                         .and_return([
                                         OpenStruct.new(
                                             id: 1111111,
@@ -114,7 +114,7 @@ describe PivotalTrackerCli::Client do
       before do
         allow(PivotalTrackerCli::Api)
             .to receive(:update_story_state)
-                    .with(project_id, api_token, id, updated_state)
+                    .with(project_id, api_token, id, updated_state, [123456, 444444])
                     .and_return("Story ##{id} successfully #{updated_state}.")
 
         allow(PivotalTrackerCli::Api)
@@ -169,7 +169,7 @@ describe PivotalTrackerCli::Client do
         before do
           allow(PivotalTrackerCli::Api)
               .to receive(:update_story_state)
-                      .with(project_id, api_token, id, updated_state)
+                      .with(project_id, api_token, id, updated_state, [123456, 444444])
                       .and_return("Story ##{id} successfully #{updated_state}.")
 
           allow(PivotalTrackerCli::Api)

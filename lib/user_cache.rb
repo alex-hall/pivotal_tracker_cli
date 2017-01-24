@@ -16,5 +16,11 @@ module PivotalTrackerCli
 
       username_to_user_id_map
     end
+
+    def self.get_user_ids_from_usernames(user_map, usernames)
+      usernames.map do |username|
+        user_map[username][:id]
+      end
+    end
   end
 end

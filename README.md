@@ -38,7 +38,7 @@ Fill in the following details, and paste into the file:
 ---
 api_token: <API TOKEN HERE>
 project_id: <PROJECT ID HERE>
-username: <USERNAME HERE>
+usernames: [<USERNAME HERE>, ...]
 ```
 
 Write, quit, and you're done!

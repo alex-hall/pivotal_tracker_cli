@@ -19,11 +19,13 @@ TODOs:
 
 ## Installation
 
-To pull in dependencies, simply run:
+To install, simply install like any other gem:
 
-    $ bundle
+```
+gem install pivotal_tracker_cli
+```
 
-## Setup
+## Configuration
 
 In order to use the gem you must first create a .pt file in the home directory: 
 
@@ -44,6 +46,13 @@ usernames: [<USERNAME HERE>, ...]
 Write, quit, and you're done!
 
 NOTE: Details about getting an API token can be found in the [tracker API documentation](https://www.pivotaltracker.com/help/api/#Getting_Started): 
+
+
+## Development Setup
+
+To pull in dependencies, simply run:
+
+    $ bundle
 
 ## Usage
 
@@ -75,9 +84,6 @@ This will output a gem to the ```pkg``` directory which you can then run ```gem 
 Once you've installed the gem you can just use the ```pt``` namespace in your shell.  
 
 NOTE: X.X.X in the example above is a place holder for the major, minor, and patch release versions. 
-
-
-TODO: Push gem to Rubygems!!
  
 
 ## Contributing
